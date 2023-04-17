@@ -1,13 +1,12 @@
 import os
-import time
 from datetime import datetime
 from json import load, dump
 
 import requests
+import schedule as schedule
 import vk_api
 from bs4 import BeautifulSoup
 from pdf2image import convert_from_bytes
-from tqdm import tqdm
 from vk_api import VkUpload
 
 vk_session = vk_api.VkApi(token=os.getenv("TOKEN"))
@@ -17,7 +16,8 @@ upload = VkUpload(vk_session)
 base_url = "https://kpml.ru/"
 url = "https://kpml.ru/pages/raspisanie/izmeneniya-v-raspisanii"
 
-while True:
+
+def check_updates():
     page = requests.get(url)
     soup = BeautifulSoup(page.text, "html.parser")
     pdfs = [base_url + i["href"] for i in soup.find_all("a") if i["href"].endswith(".pdf")]
@@ -28,7 +28,7 @@ while True:
     if to_send:
         photos = []
         print(f"[{datetime.now()}] Loading changes: {len(to_send)}")
-        for link in tqdm(to_send):
+        for link in to_send:
             page = convert_from_bytes(requests.get(link).content, 500)[0]
             path = f"temp/{link.rsplit('/', maxsplit=1)[-1].rsplit('.', maxsplit=1)[0]}.png"
             page.save(path, "PNG")
@@ -50,4 +50,9 @@ while True:
             dump(pdfs, f)
 
         print("Images sent")
-    time.sleep(60 * 40)
+
+
+schedule.every(10).minutes.do(check_updates)
+
+while True:
+    schedule.run_pending()

@@ -1,4 +1,5 @@
 requests
 beautifulsoup4
 pdf2image
-tqdm
+vk-api
+schedule
